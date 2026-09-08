@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row" id="auth-section">
+    <!-- Login Form -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h4 class="card-title text-primary fw-bold mb-3">Login</h4>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label class="form-label">Email address</label>
+                        <input type="email" id="loginEmail" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="loginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Form -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h4 class="card-title text-success fw-bold mb-3">Register Patient Account</h4>
+                <form id="registerForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" id="regUsername" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="regEmail" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="regPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main App Section (Post-Login) -->
+<div id="app-section" class="d-none">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 id="welcomeHeader" class="fw-bold">Welcome</h3>
+        <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Patient Section -->
+    <div id="patient-view" class="d-none">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="fw-bold text-primary mb-3">Book OP Appointment</h5>
+                        <form id="bookingForm">
+                            <div class="mb-3">
+                                <label class="form-label">Select Department</label>
+                                <select id="bookDept" class="form-select" required>
+                                    <option value="General Medicine">General Medicine</option>
+                                    <option value="Cardiology">Cardiology</option>
+                                    <option value="Pediatrics">Pediatrics</option>
+                                    <option value="Orthopedics">Orthopedics</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Doctor Name</label>
+                                <input type="text" id="bookDoctor" class="form-control" placeholder="Dr. Smith" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" id="bookDate" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Confirm Booking</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3">My Appointments</h5>
+                        <table class="table table-striped" id="patientBookingTable">
+                            <thead>
+                                <tr>
+                                    <th>Doctor</th>
+                                    <th>Department</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Dashboard -->
+    <div id="admin-view" class="d-none">
+        <h4 class="fw-bold text-danger mb-3">Admin Dashboard</h4>
+        <div class="row text-center mb-4">
+            <div class="col-md-3"><div class="card bg-primary text-white p-3"><h5>Total Users</h5><h2 id="statUsers">0</h2></div></div>
+            <div class="col-md-3"><div class="card bg-success text-white p-3"><h5>Appointments</h5><h2 id="statAppointments">0</h2></div></div>
+            <div class="col-md-3"><div class="card bg-info text-white p-3"><h5>Patients</h5><h2 id="statPatients">0</h2></div></div>
+            <div class="col-md-3"><div class="card bg-warning text-dark p-3"><h5>Admins</h5><h2 id="statAdmins">0</h2></div></div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3">User Management (Update / Delete)</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="adminUsersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let activeRole = null;
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPassword').value
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', data.token);
+                activeRole = data.role;
+                loadDashboard();
+            } else {
+                alert(data.error || 'Login failed');
+            }
+        } catch (err) {
+            alert('Unable to process request. Check network connection.');
+        }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('regUsername').value,
+                    email: document.getElementById('regEmail').value,
+                    password: document.getElementById('regPassword').value
+                })
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            if (res.ok) location.reload();
+        } catch (err) {
+            alert('Registration failed.');
+        }
+    });
+
+    async function loadDashboard() {
+        document.getElementById('auth-section').classList.add('d-none');
+        document.getElementById('app-section').classList.remove('d-none');
+
+        if (activeRole === 'admin') {
+            document.getElementById('admin-view').classList.remove('d-none');
+            fetchAdminData();
+        } else {
+            document.getElementById('patient-view').classList.remove('d-none');
+            fetchPatientBookings();
+        }
+    }
+
+    async function fetchPatientBookings() {
+        const res = await fetch('/api/my-bookings', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        const tbody = document.querySelector('#patientBookingTable tbody');
+        tbody.innerHTML = (data.bookings || []).map(b => `
+            <tr>
+                <td>${b.doctor_name}</td>
+                <td>${b.department}</td>
+                <td>${b.booking_date}</td>
+                <td><span class="badge bg-warning">${b.status}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('bookingForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const res = await fetch('/api/booking', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                department: document.getElementById('bookDept').value,
+                doctor_name: document.getElementById('bookDoctor').value,
+                booking_date: document.getElementById('bookDate').value
+            })
+        });
+        if (res.ok) {
+            alert('Booking submitted!');
+            fetchPatientBookings();
+        }
+    });
+
+    async function fetchAdminData() {
+        const res = await fetch('/api/admin/dashboard', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        
+        if (data.stats) {
+            document.getElementById('statUsers').innerText = data.stats.total_users;
+            document.getElementById('statAppointments').innerText = data.stats.total_appointments;
+            document.getElementById('statPatients').innerText = data.stats.patients_count;
+            document.getElementById('statAdmins').innerText = data.stats.admins_count;
+        }
+
+        const tbody = document.querySelector('#adminUsersTable tbody');
+        tbody.innerHTML = (data.users || []).map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td><input type="text" id="u-name-${u.id}" class="form-control form-control-sm" value="${u.username}"></td>
+                <td><input type="email" id="u-email-${u.id}" class="form-control form-control-sm" value="${u.email}"></td>
+                <td>
+                    <select id="u-role-${u.id}" class="form-select form-select-sm">
+                        <option value="patient" ${u.role === 'patient' ? 'selected' : ''}>patient</option>
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>admin</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-success me-1" onclick="updateUser(${u.id})">Save</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function updateUser(userId) {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                username: document.getElementById(`u-name-${userId}`).value,
+                email: document.getElementById(`u-email-${userId}`).value,
+                role: document.getElementById(`u-role-${userId}`).value
+            })
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user?')) return;
+        const res = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        if (res.ok) fetchAdminData();
+    }
+
+    async function logout() {
+        await fetch('/api/logout', { method: 'POST' });
+        localStorage.removeItem('token');
+        location.reload();
+    }
+</script>
+{% endblock %}
